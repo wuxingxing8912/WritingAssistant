@@ -1,4 +1,4 @@
-import type { LengthOption, ModeId, WritingMode } from '../types';
+import type { ModeId, WritingMode } from '../types';
 import {
   buildContinuePrompt,
   buildCopywritingPrompt,
@@ -89,10 +89,3 @@ export const DEFAULT_MODE_ID: ModeId = 'continue';
 export function getMode(id: ModeId): WritingMode {
   return MODES.find((mode) => mode.id === id) ?? MODES[0];
 }
-
-/** 输出长度（PRD 核心功能 3） */
-export const LENGTH_OPTIONS: LengthOption[] = [
-  { label: '简短', value: 512, description: '要点式，约 300 字' },
-  { label: '适中', value: 1024, description: '常规篇幅，约 600 字' },
-  { label: '详细', value: 2048, description: '充分展开，约 1200 字' },
-];

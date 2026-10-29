@@ -2,7 +2,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { InputPanel } from './components/InputPanel';
 import { ResultPanel } from './components/ResultPanel';
 import { IconSparkles } from './components/icons';
-import { DEFAULT_MODE_ID, LENGTH_OPTIONS, MODES, getMode } from './lib/modes';
+import { DEFAULT_MODE_ID, MODES, getMode } from './lib/modes';
+import {
+  MAX_RECORDS,
+  createId,
+  loadHistory,
+  saveHistory,
+  type HistoryRecord,
+} from './lib/history';
 import { hasApiKey, optimizePrompt, streamGenerate } from './lib/zhipu';
 import type { ModeId } from './types';
 
@@ -16,6 +23,7 @@ export default function App() {
   const [optimizing, setOptimizing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [history, setHistory] = useState<HistoryRecord[]>(() => loadHistory());
   const abortRef = useRef<AbortController | null>(null);
 
   const mode = getMode(modeId);
@@ -23,6 +31,10 @@ export default function App() {
   useEffect(() => {
     return () => abortRef.current?.abort();
   }, []);
+
+  useEffect(() => {
+    saveHistory(history);
+  }, [history]);
 
   const handleGenerate = useCallback(async () => {
     if (!input.trim() || loading) return;
@@ -37,9 +49,25 @@ export default function App() {
 
     try {
       const stream = streamGenerate({ mode, input, temperature, maxTokens, signal: controller.signal });
+      let full = '';
       for await (const chunk of stream) {
         if (controller.signal.aborted) break;
+        full += chunk;
         setOutput((prev) => prev + chunk);
+      }
+
+      // 生成结束（含主动停止后的部分内容）后写入历史
+      if (full.trim()) {
+        const record: HistoryRecord = {
+          id: createId(),
+          modeId: mode.id,
+          modeLabel: mode.label,
+          input: input.trim(),
+          prompt: mode.buildPrompt(input),
+          content: full,
+          createdAt: Date.now(),
+        };
+        setHistory((prev) => [record, ...prev].slice(0, MAX_RECORDS));
       }
     } catch (streamError) {
       if ((streamError as Error)?.name !== 'AbortError') {
@@ -54,6 +82,18 @@ export default function App() {
   const handleStop = useCallback(() => {
     abortRef.current?.abort();
     setLoading(false);
+  }, []);
+
+  const handleSelectHistory = useCallback((record: HistoryRecord) => {
+    setModeId(record.modeId);
+    setInput(record.input);
+    setOutput(record.content);
+    setError(null);
+    setCopied(false);
+  }, []);
+
+  const handleDeleteHistory = useCallback((id: string) => {
+    setHistory((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
   const handleOptimize = useCallback(async () => {
@@ -119,12 +159,14 @@ export default function App() {
             onTemperatureChange={setTemperature}
             maxTokens={maxTokens}
             onMaxTokensChange={setMaxTokens}
-            lengthOptions={LENGTH_OPTIONS}
             loading={loading}
             optimizing={optimizing}
             onOptimize={handleOptimize}
             onGenerate={handleGenerate}
             onStop={handleStop}
+            history={history}
+            onSelectHistory={handleSelectHistory}
+            onDeleteHistory={handleDeleteHistory}
           />
           <ResultPanel
             content={output}

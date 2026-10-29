@@ -1,4 +1,7 @@
-import type { LengthOption, ModeId, WritingMode } from '../types';
+import type { ModeId, WritingMode } from '../types';
+import type { HistoryRecord } from '../lib/history';
+import { AdvancedSettings } from './AdvancedSettings';
+import { HistoryPanel } from './HistoryPanel';
 import { ModeSelect } from './ModeSelect';
 import { IconSparkles, IconSpinner } from './icons';
 
@@ -12,12 +15,14 @@ interface InputPanelProps {
   onTemperatureChange: (value: number) => void;
   maxTokens: number;
   onMaxTokensChange: (value: number) => void;
-  lengthOptions: LengthOption[];
   loading: boolean;
   optimizing: boolean;
   onOptimize: () => void;
   onGenerate: () => void;
   onStop: () => void;
+  history: HistoryRecord[];
+  onSelectHistory: (record: HistoryRecord) => void;
+  onDeleteHistory: (id: string) => void;
 }
 
 export function InputPanel({
@@ -30,17 +35,18 @@ export function InputPanel({
   onTemperatureChange,
   maxTokens,
   onMaxTokensChange,
-  lengthOptions,
   loading,
   optimizing,
   onOptimize,
   onGenerate,
   onStop,
+  history,
+  onSelectHistory,
+  onDeleteHistory,
 }: InputPanelProps) {
   const mode = modes.find((item) => item.id === modeId) ?? modes[0];
   const disabled = loading || optimizing;
   const canGenerate = value.trim().length > 0 && !disabled;
-  const temperaturePercent = Math.round(temperature * 100);
 
   return (
     <section className="card flex flex-col p-6">
@@ -82,58 +88,14 @@ export function InputPanel({
         />
       </div>
 
-      <div className="mb-5 grid grid-cols-1 gap-5 sm:grid-cols-2">
-        <div>
-          <label htmlFor="temperature" className="field-label">
-            创意度
-            <span className="ml-auto text-xs font-normal tabular-nums text-indigo-600">
-              {temperature.toFixed(1)}
-            </span>
-          </label>
-          <input
-            id="temperature"
-            type="range"
-            min={0}
-            max={1}
-            step={0.1}
-            value={temperature}
-            disabled={disabled}
-            onChange={(event) => onTemperatureChange(Number(event.target.value))}
-            style={{
-              background: `linear-gradient(to right, #6366f1 ${temperaturePercent}%, #e2e8f0 ${temperaturePercent}%)`,
-            }}
-          />
-          <div className="mt-2 flex justify-between text-[11px] text-slate-400">
-            <span>严谨精确</span>
-            <span>天马行空</span>
-          </div>
-        </div>
-
-        <div>
-          <label className="field-label">输出长度</label>
-          <div className="flex gap-1.5 rounded-xl bg-slate-100 p-1">
-            {lengthOptions.map((option) => {
-              const active = option.value === maxTokens;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  disabled={disabled}
-                  title={option.description}
-                  onClick={() => onMaxTokensChange(option.value)}
-                  className={`flex-1 rounded-lg px-2 py-1.5 text-xs font-medium transition
-                    ${active ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}
-                    disabled:cursor-not-allowed`}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-          <p className="mt-2 text-[11px] text-slate-400">
-            {lengthOptions.find((option) => option.value === maxTokens)?.description}
-          </p>
-        </div>
+      <div className="mb-5">
+        <AdvancedSettings
+          temperature={temperature}
+          onTemperatureChange={onTemperatureChange}
+          maxTokens={maxTokens}
+          onMaxTokensChange={onMaxTokensChange}
+          disabled={disabled}
+        />
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">
@@ -153,6 +115,10 @@ export function InputPanel({
             生成内容
           </button>
         )}
+      </div>
+
+      <div className="mt-6">
+        <HistoryPanel records={history} onSelect={onSelectHistory} onDelete={onDeleteHistory} />
       </div>
     </section>
   );

@@ -161,6 +161,31 @@ export function IconDocument({ className }: IconProps) {
   );
 }
 
+export function IconClock({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 6v6l4 2" />
+    </Svg>
+  );
+}
+
+export function IconSliders({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <path d="M4 21v-7" />
+      <path d="M4 10V3" />
+      <path d="M12 21v-9" />
+      <path d="M12 8V3" />
+      <path d="M20 21v-5" />
+      <path d="M20 12V3" />
+      <path d="M1 14h6" />
+      <path d="M9 8h6" />
+      <path d="M17 16h6" />
+    </Svg>
+  );
+}
+
 export const MODE_ICONS: Record<IconName, (props: IconProps) => JSX.Element> = {
   pen: IconPen,
   refresh: IconRefresh,

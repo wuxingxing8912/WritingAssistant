@@ -35,9 +35,3 @@ export interface GenerateOptions {
   maxTokens: number;
   signal?: AbortSignal;
 }
-
-export interface LengthOption {
-  label: string;
-  value: number;
-  description: string;
-}
